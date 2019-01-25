@@ -1,0 +1,67 @@
+setwd("~/Desktop/Machine_Learning/Day1/Assignment1Text")
+
+library(tm)
+library(SnowballC)
+library(plotly)
+library(ggplot2)
+library(qgraph)
+library(wordcloud)
+library(dplyr)
+library(qgraph)
+
+#Loading data
+data1 <- read.csv("./lyrics_beatles.csv", header = TRUE, stringsAsFactors = FALSE)
+
+str(data1)
+
+#transform vector into corpus:
+corpus <- Corpus(VectorSource(data1[,3]))
+corpus
+
+corpus[[1]]
+
+# Applying the lowercase transformation to the corpus object:
+corpus <- tm_map(corpus, tolower)
+corpus
+
+# Applying more transformations to the corpus object (removing ponctuation and numbers):
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeNumbers)
+
+# Transform the corpus into a document term matrix.
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+corpus <- tm_map(corpus, stemDocument)
+dtm <- DocumentTermMatrix(corpus)
+dtm
+
+#Decreasing sparsity:
+dtm.beatles <- DocumentTermMatrix(corpus)
+dtm.beatles <- removeSparseTerms(dtm.beatles, 0.9)
+dtm.beatles
+beatles.lyrics <- as.data.frame(as.matrix(dtm.beatles))
+head(beatles.lyrics)
+
+
+#Plotting word frequencies:
+freq.dtm <- colSums((beatles.lyrics),decreasing=TRUE)
+freq.data <- data.frame(word = names(freq.dtm),freq=freq.dtm)
+
+#GGPLOT
+freq.plot <- ggplot(freq.data, aes(reorder(word, freq), freq)) + geom_col() + 
+  xlab(NULL) + coord_flip() + ylab("Frequency")+
+  theme(text = element_text(size = 15))
+
+freq.plot
+
+#correlations
+cor.terms <- cor_auto(beatles.lyrics)
+
+a <- list(showticklabels = TRUE, tickangle = -45)
+plot.cor <- plot_ly(x = colnames(cor.terms), y = colnames(cor.terms),
+                    z = cor.terms, type = "heatmap") %>%
+  layout(xaxis = a,  showlegend = FALSE, margin = list(l=100,b=100,r=100,u=100))
+
+plot.cor
+
+
+
